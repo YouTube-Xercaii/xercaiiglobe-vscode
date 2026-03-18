@@ -54,3 +54,10 @@ export async function getMe(): Promise<UserInfo | null> {
     return null;
   }
 }
+
+export async function sendOffline(): Promise<void> {
+  try {
+    await getClient().delete("/heartbeats");
+  } catch {
+  }
+}

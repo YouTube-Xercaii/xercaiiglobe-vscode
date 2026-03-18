@@ -9,6 +9,7 @@ import {
   stopHeartbeatLoop,
   sendImmediateHeartbeat,
 } from "./heartbeat";
+import { sendOffline } from "./api";
 import { SidebarProvider } from "./sidebarProvider";
 
 let sidebarProvider: SidebarProvider;
@@ -33,6 +34,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand("xercaiiglobe.logout", async () => {
+      await sendOffline();
       await signOut();
       stopHeartbeatLoop();
       stopTracking();
@@ -50,6 +52,7 @@ export function activate(context: vscode.ExtensionContext): void {
         initTracking(context);
         vscode.window.showInformationMessage("XercaiiGlobe: Tracking enabled.");
       } else {
+        await sendOffline();
         stopHeartbeatLoop();
         stopTracking();
         setStatus("offline");
@@ -135,6 +138,7 @@ function initTracking(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
+  sendOffline();
   stopHeartbeatLoop();
   stopTracking();
   disposeStatusBar();
