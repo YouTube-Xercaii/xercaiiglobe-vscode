@@ -1,0 +1,128 @@
+{
+  "name": "xercaiiglobe",
+  "displayName": "XercaiiGlobe",
+  "description": "Show your coding activity on a real-time 3D globe",
+  "version": "0.1.0",
+  "publisher": "YouTube-Xercaii",
+  "icon": "resources/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "globe",
+    "activity",
+    "coding",
+    "real-time",
+    "tracker"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YouTube-Xercaii/xercaiiglobe-vscode"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "xercaiiglobe-sidebar",
+          "title": "XercaiiGlobe",
+          "icon": "resources/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "xercaiiglobe-sidebar": [
+        {
+          "type": "webview",
+          "id": "xercaiiglobe.sidebarView",
+          "name": "XercaiiGlobe"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "xercaiiglobe.login",
+        "title": "XercaiiGlobe: Sign In"
+      },
+      {
+        "command": "xercaiiglobe.logout",
+        "title": "XercaiiGlobe: Sign Out"
+      },
+      {
+        "command": "xercaiiglobe.toggleTracking",
+        "title": "XercaiiGlobe: Toggle Activity Tracking"
+      },
+      {
+        "command": "xercaiiglobe.openDashboard",
+        "title": "XercaiiGlobe: Open Dashboard"
+      },
+      {
+        "command": "xercaiiglobe.showStatus",
+        "title": "XercaiiGlobe: Show Status"
+      },
+      {
+        "command": "xercaiiglobe.setApiKey",
+        "title": "XercaiiGlobe: Set API Key"
+      }
+    ],
+    "configuration": {
+      "title": "XercaiiGlobe",
+      "properties": {
+        "xercaiiglobe.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your XercaiiGlobe API key (obtained after signing in)",
+          "order": 1
+        },
+        "xercaiiglobe.apiUrl": {
+          "type": "string",
+          "default": "https://devglobe-api.onrender.com",
+          "description": "XercaiiGlobe API server URL",
+          "order": 2
+        },
+        "xercaiiglobe.trackingEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable activity tracking",
+          "order": 3
+        },
+        "xercaiiglobe.showFileName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Share the file name you're working on",
+          "order": 4
+        },
+        "xercaiiglobe.showProjectName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Share the project/workspace name",
+          "order": 5
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
