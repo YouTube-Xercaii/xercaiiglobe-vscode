@@ -2,6 +2,17 @@ import { sendHeartbeat } from "./api";
 import { isActive, getCurrentFile, getCurrentLanguage, getCurrentProject } from "./tracker";
 import { isAuthenticated } from "./config";
 import { HeartbeatPayload } from "./types";
+import * as os from "os";
+
+function getOSName(): string {
+  const platform = os.platform();
+  switch (platform) {
+    case "win32": return "Windows";
+    case "darwin": return "macOS";
+    case "linux": return "Linux";
+    default: return platform;
+  }
+}
 
 const HEARTBEAT_INTERVAL_MS = 3 * 1000;
 
@@ -35,6 +46,7 @@ export function startHeartbeatLoop(): void {
       editor: "VS Code",
       project: project || "Unknown",
       timestamp: new Date().toISOString(),
+      os_name: getOSName(),
     };
 
     await sendHeartbeat(payload);
@@ -59,6 +71,7 @@ export async function sendImmediateHeartbeat(): Promise<void> {
     editor: "VS Code",
     project: getCurrentProject() || "Unknown",
     timestamp: new Date().toISOString(),
+    os_name: getOSName(),
   };
 
   await sendHeartbeat(payload);

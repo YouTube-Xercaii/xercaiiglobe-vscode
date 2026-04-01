@@ -4,6 +4,7 @@ export interface HeartbeatPayload {
   editor: string;
   project: string;
   timestamp: string;
+  os_name?: string;
 }
 
 export interface HeartbeatResponse {
