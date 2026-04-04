@@ -2,7 +2,7 @@
   "name": "xercaiiglobe",
   "displayName": "XercaiiGlobe",
   "description": "Show your coding activity on a real-time 3D globe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "YouTube-Xercaii",
   "icon": "resources/icon.png",
   "engines": {
