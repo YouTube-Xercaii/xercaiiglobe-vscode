@@ -82,7 +82,7 @@
         },
         "xercaiiglobe.apiUrl": {
           "type": "string",
-          "default": "https://devglobe-api.onrender.com",
+          "default": "https://XercaiiGlobe-api.onrender.com",
           "description": "XercaiiGlobe API server URL",
           "order": 2
         },

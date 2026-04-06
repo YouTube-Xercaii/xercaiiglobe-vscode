@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand("xercaiiglobe.openDashboard", () => {
       vscode.env.openExternal(
-        vscode.Uri.parse("https://devglobe-web.onrender.com/dashboard")
+        vscode.Uri.parse("https://XercaiiGlobe-web.onrender.com/dashboard")
       );
     }),
 
