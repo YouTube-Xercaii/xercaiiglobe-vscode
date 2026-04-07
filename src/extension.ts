@@ -95,6 +95,12 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand("xercaiiglobe.toggleCodeShare", async () => {
+      // Only allow starting code sharing from desktop clients
+      if (vscode.env.uiKind !== vscode.UIKind.Desktop && !isSharingCode()) {
+        vscode.window.showWarningMessage("XercaiiGlobe: Code sharing is only available on desktop clients.");
+        return;
+      }
+
       if (isSharingCode()) {
         stopCodeShare();
         updateCodeShareStatusBar();

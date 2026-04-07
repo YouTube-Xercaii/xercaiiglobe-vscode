@@ -9,11 +9,15 @@ import * as vscode from "vscode";
 import { getExtSocket, getSocketUserId } from "./socket";
 import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 import type { Socket } from "socket.io-client";
+// (vscode already imported above)
 
 let _callRoom: string | null = null;
 let _inCall = false;
 let _listenersAttached = false;
 let _codeShareStatusBar: vscode.StatusBarItem | null = null;
+let _muteStatusBar: vscode.StatusBarItem | null = null;
+let _codeSharePanel: vscode.WebviewPanel | null = null;
+let _currentSharedUser: string | null = null;
 
 interface CallerInfo {
   username?: string;
@@ -57,25 +61,63 @@ export function attachCallListeners(): void {
     );
   });
 
-  // ─── Peer mute state updates ──────────────────────────────
-  socket.on("call_peer_mute_state", (data: { user_id: string; is_muted: boolean; is_deafened: boolean }) => {
-    const userId = getSocketUserId();
-    // Ignore our own events
-    if (data.user_id === userId) return;
-    if (data.is_muted) {
-      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer muted", 3000);
-    } else {
-      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer unmuted", 2000);
+  // ─── Peer mute state (relay from server) ─────────────────
+  socket.on("call_peer_mute_state", (data: { user_id: string; is_muted: boolean; is_deafened?: boolean }) => {
+    try {
+      const me = getSocketUserId();
+      if (data.user_id && data.user_id !== me) {
+        // show transient status and update status bar
+        if (data.is_muted) {
+          vscode.window.setStatusBarMessage("XercaiiGlobe: Peer muted", 3000);
+        } else {
+          vscode.window.setStatusBarMessage("XercaiiGlobe: Peer unmuted", 2000);
+        }
+        updateMuteStatusBar(data.is_muted);
+      }
+    } catch (e) {
+      console.warn("[XercaiiGlobe] call_peer_mute_state handler error", e);
     }
   });
 
-  // ─── Peer speaking indicator (very lightweight) ──────────
+  // ─── Peer speaking indicator ─────────────────────────────
   socket.on("call_peer_speaking", (data: { user_id: string; speaking: boolean }) => {
-    const userId = getSocketUserId();
-    if (data.user_id === userId) return;
-    // transient status when peer starts/stops speaking
-    if (data.speaking) {
-      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer speaking…", 1000);
+    try {
+      const me = getSocketUserId();
+      if (data.user_id && data.user_id !== me && data.speaking) {
+        vscode.window.setStatusBarMessage("XercaiiGlobe: Peer speaking…", 1000);
+      }
+    } catch (e) {
+      console.warn("[XercaiiGlobe] call_peer_speaking handler error", e);
+    }
+  });
+
+  // ─── Incoming live code sharing events ────────────────────
+  socket.on("code_share_started", (data: { user_id: string; file_name: string; language?: string; content?: string }) => {
+    try {
+      if (!data || !data.user_id) return;
+      openOrUpdateCodeSharePanel(data.user_id, data.file_name, data.language || "text", data.content || "");
+    } catch (e) {
+      console.warn("[XercaiiGlobe] code_share_started handler error", e);
+    }
+  });
+
+  socket.on("code_share_updated", (data: { user_id: string; file_name: string; language?: string; content?: string }) => {
+    try {
+      if (!data || !data.user_id) return;
+      openOrUpdateCodeSharePanel(data.user_id, data.file_name, data.language || "text", data.content || "");
+    } catch (e) {
+      console.warn("[XercaiiGlobe] code_share_updated handler error", e);
+    }
+  });
+
+  socket.on("code_share_stopped", (data: { user_id: string }) => {
+    try {
+      if (!data || !data.user_id) return;
+      if (_currentSharedUser === data.user_id) {
+        closeCodeSharePanel();
+      }
+    } catch (e) {
+      console.warn("[XercaiiGlobe] code_share_stopped handler error", e);
     }
   });
 
@@ -218,4 +260,62 @@ function hideCodeShareStatusBar(): void {
     _codeShareStatusBar.dispose();
     _codeShareStatusBar = null;
   }
+}
+
+/** Update or create a small mute-status bar item. */
+function updateMuteStatusBar(isMuted: boolean): void {
+  if (!_muteStatusBar) {
+    _muteStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 89);
+    _muteStatusBar.command = undefined;
+  }
+
+  if (isMuted) {
+    _muteStatusBar.text = "$(debug-disconnect) Peer muted";
+    _muteStatusBar.tooltip = "A peer in the call is muted";
+    _muteStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+    _muteStatusBar.show();
+  } else {
+    _muteStatusBar.text = "$(megaphone) Peer unmuted";
+    _muteStatusBar.tooltip = "A peer in the call is unmuted";
+    _muteStatusBar.backgroundColor = undefined;
+    _muteStatusBar.show();
+    // hide after brief moment
+    setTimeout(() => {
+      if (_muteStatusBar && !isMuted) {
+        _muteStatusBar.hide();
+      }
+    }, 2000);
+  }
+}
+
+/** Open or update the code-share webview panel for live viewing. */
+function openOrUpdateCodeSharePanel(userId: string, fileName: string, language: string, content: string): void {
+  _currentSharedUser = userId;
+  if (!_codeSharePanel) {
+    _codeSharePanel = vscode.window.createWebviewPanel(
+      "xercaiiglobe.codeShare",
+      `Live Code: ${fileName}`,
+      vscode.ViewColumn.Beside,
+      { enableScripts: true }
+    );
+
+    _codeSharePanel.onDidDispose(() => {
+      _codeSharePanel = null;
+      _currentSharedUser = null;
+    });
+  } else {
+    _codeSharePanel.title = `Live Code: ${fileName}`;
+  }
+
+  const safeContent = (content || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family: monospace;white-space:pre-wrap; padding:12px;}</style></head><body><div><strong>${fileName} — ${language}</strong></div><pre id="code">${safeContent}</pre><script>window.addEventListener('message',e=>{if(e.data?.content){document.getElementById('code').textContent=e.data.content}})</script></body></html>`;
+  _codeSharePanel.webview.html = html;
+}
+
+function closeCodeSharePanel(): void {
+  if (_codeSharePanel) {
+    try { _codeSharePanel.dispose(); } catch (e) { /* ignore */ }
+    _codeSharePanel = null;
+  }
+  _currentSharedUser = null;
 }
