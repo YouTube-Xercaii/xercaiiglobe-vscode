@@ -13,6 +13,7 @@ import type { Socket } from "socket.io-client";
 let _callRoom: string | null = null;
 let _inCall = false;
 let _listenersAttached = false;
+let _codeShareStatusBar: vscode.StatusBarItem | null = null;
 
 interface CallerInfo {
   username?: string;
@@ -43,6 +44,8 @@ export function attachCallListeners(): void {
     callee_info: CallerInfo;
   }) => {
     _inCall = true;
+    vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
+    showCodeShareStatusBar();
     const name = data.callee_info.display_name || data.callee_info.username || "Friend";
     vscode.window.showInformationMessage(
       `XercaiiGlobe: ${name} joined the call!`
@@ -85,6 +88,8 @@ async function handleIncomingCall(
   if (choice === "Accept") {
     _callRoom = callRoom;
     _inCall = true;
+    vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
+    showCodeShareStatusBar();
 
     socket.emit("call_accept", {
       callee_id: userId,
@@ -122,6 +127,8 @@ function cleanupCall(): void {
   }
   _callRoom = null;
   _inCall = false;
+  vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", false);
+  hideCodeShareStatusBar();
 }
 
 /** Detach listeners (for cleanup on deactivation). */
@@ -146,4 +153,42 @@ export function isInCall(): boolean {
 /** Get the current call room, if any. */
 export function getCallRoom(): string | null {
   return _callRoom;
+}
+
+/** Show a status bar item during calls prompting code share. */
+function showCodeShareStatusBar(): void {
+  if (!_codeShareStatusBar) {
+    _codeShareStatusBar = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      90
+    );
+  }
+  updateCodeShareStatusBar();
+  _codeShareStatusBar.show();
+}
+
+/** Update the status bar text based on sharing state. */
+export function updateCodeShareStatusBar(): void {
+  if (!_codeShareStatusBar) return;
+  if (isSharingCode()) {
+    _codeShareStatusBar.text = "$(broadcast) Sharing Code";
+    _codeShareStatusBar.tooltip = "Click to stop sharing your editor";
+    _codeShareStatusBar.backgroundColor = new vscode.ThemeColor(
+      "statusBarItem.warningBackground"
+    );
+  } else {
+    _codeShareStatusBar.text = "$(broadcast) Share Code";
+    _codeShareStatusBar.tooltip = "Click to share your current editor with your call peer";
+    _codeShareStatusBar.backgroundColor = undefined;
+  }
+  _codeShareStatusBar.command = "xercaiiglobe.toggleCodeShare";
+}
+
+/** Hide the code share status bar item. */
+function hideCodeShareStatusBar(): void {
+  if (_codeShareStatusBar) {
+    _codeShareStatusBar.hide();
+    _codeShareStatusBar.dispose();
+    _codeShareStatusBar = null;
+  }
 }

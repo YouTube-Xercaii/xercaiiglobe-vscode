@@ -12,7 +12,7 @@ import {
 import { sendOffline, getMe } from "./api";
 import { SidebarProvider } from "./sidebarProvider";
 import { connectExtSocket, disconnectExtSocket } from "./socket";
-import { attachCallListeners, detachCallListeners, getCallRoom } from "./callHandler";
+import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar } from "./callHandler";
 import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 
 let sidebarProvider: SidebarProvider;
@@ -97,6 +97,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("xercaiiglobe.toggleCodeShare", async () => {
       if (isSharingCode()) {
         stopCodeShare();
+        updateCodeShareStatusBar();
         vscode.window.showInformationMessage("XercaiiGlobe: Stopped sharing code.");
       } else {
         const room = getCallRoom();
@@ -105,6 +106,7 @@ export function activate(context: vscode.ExtensionContext): void {
           return;
         }
         startCodeShare(room);
+        updateCodeShareStatusBar();
         vscode.window.showInformationMessage("XercaiiGlobe: Now sharing your editor with your call peer!");
       }
     })
