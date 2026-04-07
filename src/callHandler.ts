@@ -57,6 +57,28 @@ export function attachCallListeners(): void {
     );
   });
 
+  // ─── Peer mute state updates ──────────────────────────────
+  socket.on("call_peer_mute_state", (data: { user_id: string; is_muted: boolean; is_deafened: boolean }) => {
+    const userId = getSocketUserId();
+    // Ignore our own events
+    if (data.user_id === userId) return;
+    if (data.is_muted) {
+      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer muted", 3000);
+    } else {
+      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer unmuted", 2000);
+    }
+  });
+
+  // ─── Peer speaking indicator (very lightweight) ──────────
+  socket.on("call_peer_speaking", (data: { user_id: string; speaking: boolean }) => {
+    const userId = getSocketUserId();
+    if (data.user_id === userId) return;
+    // transient status when peer starts/stops speaking
+    if (data.speaking) {
+      vscode.window.setStatusBarMessage("XercaiiGlobe: Peer speaking…", 1000);
+    }
+  });
+
   // ─── Call rejected ─────────────────────────────────────────
   socket.on("call_rejected", () => {
     cleanupCall();
