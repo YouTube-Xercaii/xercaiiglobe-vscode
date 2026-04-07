@@ -38,11 +38,16 @@ export function attachCallListeners(): void {
     handleIncomingCall(socket, name, data.caller_id, data.call_room);
   });
 
-  // ─── Call accepted (we might be the caller) ────────────────
+  // ─── Call accepted (we might be the caller or callee) ──────
   socket.on("call_accepted", (data: {
     callee_id: string;
     callee_info: CallerInfo;
+    call_room?: string;
   }) => {
+    // Always set _inCall and _callRoom, even if we are the caller
+    if (data.call_room) {
+      _callRoom = data.call_room;
+    }
     _inCall = true;
     vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
     showCodeShareStatusBar();
