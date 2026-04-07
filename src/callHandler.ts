@@ -12,6 +12,7 @@ import type { Socket } from "socket.io-client";
 
 let _callRoom: string | null = null;
 let _inCall = false;
+let _peerMuted = false;
 let _listenersAttached = false;
 let _codeShareStatusBar: vscode.StatusBarItem | null = null;
 
@@ -34,6 +35,10 @@ export function attachCallListeners(): void {
     caller_info: CallerInfo;
     call_room: string;
   }) => {
+    _callRoom = data.call_room;
+    _inCall = true;
+    vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
+    showCodeShareStatusBar();
     const name = data.caller_info.display_name || data.caller_info.username || "Someone";
     handleIncomingCall(socket, name, data.caller_id, data.call_room);
   });
@@ -44,7 +49,6 @@ export function attachCallListeners(): void {
     callee_info: CallerInfo;
     call_room?: string;
   }) => {
-    // Always set _inCall and _callRoom, even if we are the caller
     if (data.call_room) {
       _callRoom = data.call_room;
     }
@@ -71,6 +75,16 @@ export function attachCallListeners(): void {
     vscode.window.showInformationMessage(
       "XercaiiGlobe: Call ended."
     );
+  });
+
+  // ─── Peer mute state sync ─────────────────────────────────
+  socket.on("call_peer_muted", () => {
+    _peerMuted = true;
+    vscode.window.showInformationMessage("XercaiiGlobe: Your peer muted their mic.");
+  });
+  socket.on("call_peer_unmuted", () => {
+    _peerMuted = false;
+    vscode.window.showInformationMessage("XercaiiGlobe: Your peer unmuted their mic.");
   });
 }
 
@@ -150,9 +164,15 @@ export function detachCallListeners(): void {
   cleanupCall();
 }
 
+
 /** Whether the user is currently in a call. */
 export function isInCall(): boolean {
   return _inCall;
+}
+
+/** Whether the peer is muted. */
+export function isPeerMuted(): boolean {
+  return _peerMuted;
 }
 
 /** Get the current call room, if any. */
