@@ -11,6 +11,14 @@
 - **Status bar indicator** — See your tracking status at a glance
 - **One-click auth** — Sign in with Discord via the XercaiiGlobe website
 
+### Voice Calling & Code Sharing
+
+- **Peer-to-peer voice calls** — Call other XercaiiGlobe users directly from the web dashboard; your VS Code extension syncs automatically
+- **Live code sharing** — Share your active editor file with your call peer in real time
+- **Status bar toggle** — A `$(broadcast)` icon appears in the status bar during calls to quickly start/stop sharing
+- **Editor title button** — "Share This File" appears in the editor toolbar when you're in a call
+- **Speaking & mute sync** — Your voice activity and mute/deafen state are reflected live on the web UI
+
 ## How It Works
 
 1. Install the extension
@@ -20,6 +28,12 @@
 
 > Don't have an API key yet? Click **Sign In with Discord** in the sidebar to create your account first.
 
+### Calling & Code Sharing
+
+1. Start a voice call from the XercaiiGlobe web dashboard
+2. During a call, click the **$(broadcast)** icon in the VS Code status bar (or the editor title button) to share your current file
+3. Your peer will see your code in a live viewer on the web
+
 ## Commands
 
 | Command | Description |
@@ -28,6 +42,7 @@
 | `XercaiiGlobe: Sign Out` | Clear your API key and stop tracking |
 | `XercaiiGlobe: Set API Key` | Manually set or update your API key |
 | `XercaiiGlobe: Toggle Activity Tracking` | Enable or disable tracking |
+| `XercaiiGlobe: Toggle Code Sharing` | Start or stop sharing your active editor file during a call |
 | `XercaiiGlobe: Open Dashboard` | Open the XercaiiGlobe web dashboard |
 | `XercaiiGlobe: Show Status` | Display current extension status |
 
