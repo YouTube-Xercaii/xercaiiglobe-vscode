@@ -1,14 +1,3 @@
-import { getCallRoom } from "./callHandler";
-let _isMuted = false;
-/** Toggle mute state and emit to peer. */
-export function toggleMute(): void {
-  _isMuted = !_isMuted;
-  const socket = getExtSocket();
-  const room = getCallRoom();
-  if (room) {
-    socket.emit(_isMuted ? "call_mute" : "call_unmute", { call_room: room });
-  }
-}
 /**
  * XercaiiGlobe VS Code Extension — Code Share Service
  *
