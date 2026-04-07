@@ -69,6 +69,10 @@
       {
         "command": "xercaiiglobe.setApiKey",
         "title": "XercaiiGlobe: Set API Key"
+      },
+      {
+        "command": "xercaiiglobe.toggleCodeShare",
+        "title": "XercaiiGlobe: Toggle Code Sharing"
       }
     ],
     "configuration": {
@@ -116,13 +120,14 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.19.0",
-    "typescript": "^5.3.0",
-    "@vscode/vsce": "^2.22.0"
+    "typescript": "^5.3.0"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "socket.io-client": "^4.8.3"
   }
 }

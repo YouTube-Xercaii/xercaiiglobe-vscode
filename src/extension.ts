@@ -9,8 +9,11 @@ import {
   stopHeartbeatLoop,
   sendImmediateHeartbeat,
 } from "./heartbeat";
-import { sendOffline } from "./api";
+import { sendOffline, getMe } from "./api";
 import { SidebarProvider } from "./sidebarProvider";
+import { connectExtSocket, disconnectExtSocket } from "./socket";
+import { attachCallListeners, detachCallListeners, getCallRoom } from "./callHandler";
+import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 
 let sidebarProvider: SidebarProvider;
 
@@ -38,6 +41,8 @@ export function activate(context: vscode.ExtensionContext): void {
       await signOut();
       stopHeartbeatLoop();
       stopTracking();
+      detachCallListeners();
+      disconnectExtSocket();
       setStatus("offline");
       sidebarProvider.setStatus("offline");
     }),
@@ -55,6 +60,8 @@ export function activate(context: vscode.ExtensionContext): void {
         await sendOffline();
         stopHeartbeatLoop();
         stopTracking();
+        detachCallListeners();
+        disconnectExtSocket();
         setStatus("offline");
         sidebarProvider.setStatus("offline");
         vscode.window.showInformationMessage("XercaiiGlobe: Tracking disabled.");
@@ -85,6 +92,21 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("xercaiiglobe.setApiKey", async () => {
       await setApiKey();
       initTracking(context);
+    }),
+
+    vscode.commands.registerCommand("xercaiiglobe.toggleCodeShare", async () => {
+      if (isSharingCode()) {
+        stopCodeShare();
+        vscode.window.showInformationMessage("XercaiiGlobe: Stopped sharing code.");
+      } else {
+        const room = getCallRoom();
+        if (!room) {
+          vscode.window.showWarningMessage("XercaiiGlobe: You must be in a call to share code.");
+          return;
+        }
+        startCodeShare(room);
+        vscode.window.showInformationMessage("XercaiiGlobe: Now sharing your editor with your call peer!");
+      }
     })
   );
 
@@ -135,11 +157,29 @@ function initTracking(context: vscode.ExtensionContext): void {
 
   setStatus("active");
   sidebarProvider.setStatus("active");
+
+  // Connect Socket.IO for call notifications & code sharing
+  initSocket();
+}
+
+async function initSocket(): Promise<void> {
+  try {
+    const me = await getMe();
+    if (me && me.id) {
+      connectExtSocket(me.id);
+      attachCallListeners();
+      console.log(`[XercaiiGlobe] Socket.IO connected for user ${me.id}`);
+    }
+  } catch (err) {
+    console.warn("[XercaiiGlobe] Failed to connect Socket.IO:", err);
+  }
 }
 
 export function deactivate(): void {
   sendOffline();
   stopHeartbeatLoop();
   stopTracking();
+  detachCallListeners();
+  disconnectExtSocket();
   disposeStatusBar();
 }
