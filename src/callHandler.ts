@@ -18,6 +18,8 @@ let _codeShareStatusBar: vscode.StatusBarItem | null = null;
 let _muteStatusBar: vscode.StatusBarItem | null = null;
 let _codeSharePanel: vscode.WebviewPanel | null = null;
 let _currentSharedUser: string | null = null;
+// Track peer mute states persistently so UI reflects last-known state
+const _peerMuteState: Record<string, boolean> = {};
 
 interface CallerInfo {
   username?: string;
@@ -66,13 +68,15 @@ export function attachCallListeners(): void {
     try {
       const me = getSocketUserId();
       if (data.user_id && data.user_id !== me) {
-        // show transient status and update status bar
+        // persist the peer mute state and update aggregated UI
+        _peerMuteState[data.user_id] = Boolean(data.is_muted);
+        const anyPeerMuted = Object.values(_peerMuteState).some((v) => v === true);
         if (data.is_muted) {
           vscode.window.setStatusBarMessage("XercaiiGlobe: Peer muted", 3000);
         } else {
           vscode.window.setStatusBarMessage("XercaiiGlobe: Peer unmuted", 2000);
         }
-        updateMuteStatusBar(data.is_muted);
+        updateMuteStatusBar(anyPeerMuted);
       }
     } catch (e) {
       console.warn("[XercaiiGlobe] call_peer_mute_state handler error", e);
@@ -271,20 +275,20 @@ function updateMuteStatusBar(isMuted: boolean): void {
 
   if (isMuted) {
     _muteStatusBar.text = "$(debug-disconnect) Peer muted";
-    _muteStatusBar.tooltip = "A peer in the call is muted";
+    _muteStatusBar.tooltip = "One or more peers in the call are muted";
     _muteStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
     _muteStatusBar.show();
   } else {
     _muteStatusBar.text = "$(megaphone) Peer unmuted";
-    _muteStatusBar.tooltip = "A peer in the call is unmuted";
+    _muteStatusBar.tooltip = "No peers are muted";
     _muteStatusBar.backgroundColor = undefined;
+    // show briefly then hide for visual feedback
     _muteStatusBar.show();
-    // hide after brief moment
     setTimeout(() => {
       if (_muteStatusBar && !isMuted) {
         _muteStatusBar.hide();
       }
-    }, 2000);
+    }, 1500);
   }
 }
 

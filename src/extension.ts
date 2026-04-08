@@ -12,7 +12,7 @@ import {
 import { sendOffline, getMe } from "./api";
 import { SidebarProvider } from "./sidebarProvider";
 import { connectExtSocket, disconnectExtSocket } from "./socket";
-import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar } from "./callHandler";
+  import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar, isInCall } from "./callHandler";
 import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 
 let sidebarProvider: SidebarProvider;
@@ -106,11 +106,27 @@ export function activate(context: vscode.ExtensionContext): void {
         updateCodeShareStatusBar();
         vscode.window.showInformationMessage("XercaiiGlobe: Stopped sharing code.");
       } else {
-        const room = getCallRoom();
+        // There can be a short race where we're marked in-call before the call_room arrives
+        let room = getCallRoom();
+        if (!room && isInCall()) {
+          // wait up to 3s for call room to be populated
+          const waited = await (async function waitForCallRoom(timeoutMs = 3000) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+              const r = getCallRoom();
+              if (r) return r;
+              await new Promise((res) => setTimeout(res, 200));
+            }
+            return null;
+          })();
+          if (waited) room = waited;
+        }
+
         if (!room) {
           vscode.window.showWarningMessage("XercaiiGlobe: You must be in a call to share code.");
           return;
         }
+
         startCodeShare(room);
         updateCodeShareStatusBar();
         vscode.window.showInformationMessage("XercaiiGlobe: Now sharing your editor with your call peer!");
