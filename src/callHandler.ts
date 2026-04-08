@@ -55,6 +55,8 @@ export function attachCallListeners(): void {
   });
 
   // ─── Call accepted (we might be the caller or callee) ──────
+  // The server now also emits this to personal rooms so the extension
+  // detects web-initiated calls. Guard against double-processing.
   socket.on("call_accepted", (data: {
     callee_id: string;
     callee_info: CallerInfo;
@@ -69,17 +71,19 @@ export function attachCallListeners(): void {
       }
     }
 
-    _inCall = true;
-    vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
-    showCodeShareStatusBar();
-
     if (_callRoom) {
       setSocketCallRoom(_callRoom);
     }
 
+    if (_inCall) { return; }
+
+    _inCall = true;
+    vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
+    showCodeShareStatusBar();
+
     notifyStateChanged();
 
-    const name = data.callee_info.display_name || data.callee_info.username || "Friend";
+    const name = data.callee_info?.display_name || data.callee_info?.username || "Friend";
     vscode.window.showInformationMessage(
       `XercaiiGlobe: ${name} joined the call!`
     );
