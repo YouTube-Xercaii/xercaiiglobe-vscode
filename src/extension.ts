@@ -12,7 +12,7 @@ import {
 import { sendOffline, getMe } from "./api";
 import { SidebarProvider } from "./sidebarProvider";
 import { connectExtSocket, disconnectExtSocket } from "./socket";
-  import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar, isInCall } from "./callHandler";
+import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar, isInCall, onCallStateChanged } from "./callHandler";
 import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 
 let sidebarProvider: SidebarProvider;
@@ -29,6 +29,8 @@ export function activate(context: vscode.ExtensionContext): void {
       sidebarProvider
     )
   );
+
+  onCallStateChanged(() => sidebarProvider.refresh());
 
   context.subscriptions.push(
     vscode.commands.registerCommand("xercaiiglobe.login", async () => {
@@ -104,6 +106,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (isSharingCode()) {
         stopCodeShare();
         updateCodeShareStatusBar();
+        sidebarProvider.refresh();
         vscode.window.showInformationMessage("XercaiiGlobe: Stopped sharing code.");
       } else {
         // There can be a short race where we're marked in-call before the call_room arrives
@@ -129,6 +132,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         startCodeShare(room);
         updateCodeShareStatusBar();
+        sidebarProvider.refresh();
         vscode.window.showInformationMessage("XercaiiGlobe: Now sharing your editor with your call peer!");
       }
     })

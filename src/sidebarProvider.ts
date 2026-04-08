@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import { isAuthenticated, getConfig } from "./config";
+import { isInCall } from "./callHandler";
+import { isSharingCode } from "./codeShare";
 import { TrackingStatus } from "./types";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -50,6 +52,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this.refresh();
           break;
         }
+        case "toggleCodeShare": {
+          await vscode.commands.executeCommand("xercaiiglobe.toggleCodeShare");
+          this.refresh();
+          break;
+        }
       }
     });
   }
@@ -69,6 +76,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const authed = isAuthenticated();
     const config = getConfig();
     const status = this._status;
+    const inCall = isInCall();
+    const sharingCode = isSharingCode();
 
     const statusColor =
       status === "active"
@@ -85,6 +94,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const maskedKey = authed
       ? config.apiKey.substring(0, 6) + "••••••••••••"
       : "Not set";
+
+    const callSection = inCall
+      ? `<div class="section">
+    <div class="section-title">Call</div>
+    <div class="status-card">
+      <div class="status-dot" style="background: #22c55e; box-shadow: 0 0 6px #22c55e;"></div>
+      <span class="status-text">In Call</span>
+    </div>
+    <div style="margin-top: 8px;">
+      <button class="btn ${sharingCode ? "btn-danger" : "btn-primary"}" onclick="send('toggleCodeShare')">
+        ${sharingCode ? "Stop Sharing Code" : "Share Code"}
+      </button>
+    </div>
+  </div>
+  <div class="divider"></div>`
+      : "";
 
     return  `<!DOCTYPE html>
 <html lang="en">
@@ -208,6 +233,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       <span class="status-text">${statusLabel}</span>
     </div>
   </div>
+
+  ${callSection}
 
   <!-- API Key -->
   <div class="section">

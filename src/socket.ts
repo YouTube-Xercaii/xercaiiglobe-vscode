@@ -10,6 +10,7 @@ import { getConfig } from "./config";
 
 let socket: Socket | null = null;
 let _userId: string | null = null;
+let _callRoom: string | null = null;
 
 /** Get or create the singleton Socket.IO client. */
 export function getExtSocket(): Socket {
@@ -28,9 +29,12 @@ export function getExtSocket(): Socket {
 
     socket.on("connect", () => {
       console.log("[XercaiiGlobe Socket] Connected");
-      // Re-join personal room on reconnect
       if (_userId) {
         socket!.emit("join_user_room", { user_id: _userId });
+        socket!.emit("join_activity");
+      }
+      if (_callRoom) {
+        socket!.emit("rejoin_call_room", { call_room: _callRoom });
       }
     });
 
@@ -46,7 +50,7 @@ export function getExtSocket(): Socket {
   return socket;
 }
 
-/** Connect and join the user's personal room. */
+/** Connect and join the user's personal room + activity room. */
 export function connectExtSocket(userId: string): void {
   _userId = userId;
   const s = getExtSocket();
@@ -54,18 +58,29 @@ export function connectExtSocket(userId: string): void {
     s.connect();
   }
   s.emit("join_user_room", { user_id: userId });
+  s.emit("join_activity");
 }
 
 /** Disconnect the socket. */
 export function disconnectExtSocket(): void {
   if (socket) {
+    socket.emit("leave_activity");
     socket.disconnect();
     socket = null;
     _userId = null;
+    _callRoom = null;
   }
 }
 
 /** Get the current user ID (if connected). */
 export function getSocketUserId(): string | null {
   return _userId;
+}
+
+/** Join (or leave) the call room so we receive mute-state and code-share events. */
+export function setSocketCallRoom(room: string | null): void {
+  _callRoom = room;
+  if (socket && socket.connected && room) {
+    socket.emit("rejoin_call_room", { call_room: room });
+  }
 }

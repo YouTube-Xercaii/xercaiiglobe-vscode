@@ -6,10 +6,9 @@
  */
 
 import * as vscode from "vscode";
-import { getExtSocket, getSocketUserId } from "./socket";
+import { getExtSocket, getSocketUserId, setSocketCallRoom } from "./socket";
 import { startCodeShare, stopCodeShare, isSharingCode } from "./codeShare";
 import type { Socket } from "socket.io-client";
-// (vscode already imported above)
 
 let _callRoom: string | null = null;
 let _inCall = false;
@@ -18,13 +17,24 @@ let _codeShareStatusBar: vscode.StatusBarItem | null = null;
 let _muteStatusBar: vscode.StatusBarItem | null = null;
 let _codeSharePanel: vscode.WebviewPanel | null = null;
 let _currentSharedUser: string | null = null;
-// Track peer mute states persistently so UI reflects last-known state
 const _peerMuteState: Record<string, boolean> = {};
+let _stateChangeCallbacks: Array<() => void> = [];
 
 interface CallerInfo {
   username?: string;
   display_name?: string;
   avatar_url?: string;
+}
+
+/** Register a callback invoked whenever call/share state changes (e.g. sidebar refresh). */
+export function onCallStateChanged(cb: () => void): void {
+  _stateChangeCallbacks.push(cb);
+}
+
+function notifyStateChanged(): void {
+  for (const cb of _stateChangeCallbacks) {
+    try { cb(); } catch { /* ignore */ }
+  }
 }
 
 /** Attach call-related Socket.IO listeners. Call once after connecting. */
@@ -50,13 +60,25 @@ export function attachCallListeners(): void {
     callee_info: CallerInfo;
     call_room?: string;
   }) => {
-    // Always set _inCall and _callRoom, even if we are the caller
     if (data.call_room) {
       _callRoom = data.call_room;
+    } else if (!_callRoom) {
+      const myId = getSocketUserId();
+      if (myId && data.callee_id) {
+        _callRoom = `call_${[myId, data.callee_id].sort().join("_")}`;
+      }
     }
+
     _inCall = true;
     vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
     showCodeShareStatusBar();
+
+    if (_callRoom) {
+      setSocketCallRoom(_callRoom);
+    }
+
+    notifyStateChanged();
+
     const name = data.callee_info.display_name || data.callee_info.username || "Friend";
     vscode.window.showInformationMessage(
       `XercaiiGlobe: ${name} joined the call!`
@@ -68,14 +90,8 @@ export function attachCallListeners(): void {
     try {
       const me = getSocketUserId();
       if (data.user_id && data.user_id !== me) {
-        // persist the peer mute state and update aggregated UI
         _peerMuteState[data.user_id] = Boolean(data.is_muted);
         const anyPeerMuted = Object.values(_peerMuteState).some((v) => v === true);
-        if (data.is_muted) {
-          vscode.window.setStatusBarMessage("XercaiiGlobe: Peer muted", 3000);
-        } else {
-          vscode.window.setStatusBarMessage("XercaiiGlobe: Peer unmuted", 2000);
-        }
         updateMuteStatusBar(anyPeerMuted);
       }
     } catch (e) {
@@ -163,14 +179,15 @@ async function handleIncomingCall(
     _inCall = true;
     vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", true);
     showCodeShareStatusBar();
+    setSocketCallRoom(_callRoom);
+    notifyStateChanged();
 
     socket.emit("call_accept", {
       callee_id: userId,
       call_room: callRoom,
-      callee_info: {}, // minimal — web app already has our info
+      callee_info: {},
     });
 
-    // Ask if they want to share their editor
     const shareChoice = await vscode.window.showInformationMessage(
       "XercaiiGlobe: Share your code with your friend?",
       "Share Code",
@@ -179,12 +196,13 @@ async function handleIncomingCall(
 
     if (shareChoice === "Share Code" && _callRoom) {
       startCodeShare(_callRoom);
+      updateCodeShareStatusBar();
+      notifyStateChanged();
       vscode.window.showInformationMessage(
         "XercaiiGlobe: Now sharing your editor. Your friend can see what you're coding!"
       );
     }
   } else {
-    // Decline or dismissed
     socket.emit("call_reject", {
       user_id: userId,
       call_room: callRoom,
@@ -200,8 +218,14 @@ function cleanupCall(): void {
   }
   _callRoom = null;
   _inCall = false;
+  setSocketCallRoom(null);
   vscode.commands.executeCommand("setContext", "xercaiiglobe.inCall", false);
   hideCodeShareStatusBar();
+  hideMuteStatusBar();
+  for (const key of Object.keys(_peerMuteState)) {
+    delete _peerMuteState[key];
+  }
+  notifyStateChanged();
 }
 
 /** Detach listeners (for cleanup on deactivation). */
@@ -213,6 +237,11 @@ export function detachCallListeners(): void {
   socket.off("call_accepted");
   socket.off("call_rejected");
   socket.off("call_ended");
+  socket.off("call_peer_mute_state");
+  socket.off("call_peer_speaking");
+  socket.off("code_share_started");
+  socket.off("code_share_updated");
+  socket.off("code_share_stopped");
   _listenersAttached = false;
 
   cleanupCall();
@@ -266,29 +295,32 @@ function hideCodeShareStatusBar(): void {
   }
 }
 
-/** Update or create a small mute-status bar item. */
-function updateMuteStatusBar(isMuted: boolean): void {
+/** Update or create a small mute-status bar item — stays visible for the entire call. */
+function updateMuteStatusBar(peerMuted: boolean): void {
+  if (!_inCall) { return; }
   if (!_muteStatusBar) {
     _muteStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 89);
     _muteStatusBar.command = undefined;
   }
 
-  if (isMuted) {
-    _muteStatusBar.text = "$(debug-disconnect) Peer muted";
+  if (peerMuted) {
+    _muteStatusBar.text = "$(mute) Peer muted";
     _muteStatusBar.tooltip = "One or more peers in the call are muted";
     _muteStatusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
-    _muteStatusBar.show();
   } else {
-    _muteStatusBar.text = "$(megaphone) Peer unmuted";
+    _muteStatusBar.text = "$(unmute) Peer unmuted";
     _muteStatusBar.tooltip = "No peers are muted";
     _muteStatusBar.backgroundColor = undefined;
-    // show briefly then hide for visual feedback
-    _muteStatusBar.show();
-    setTimeout(() => {
-      if (_muteStatusBar && !isMuted) {
-        _muteStatusBar.hide();
-      }
-    }, 1500);
+  }
+  _muteStatusBar.show();
+}
+
+/** Hide and dispose the mute status bar item. */
+function hideMuteStatusBar(): void {
+  if (_muteStatusBar) {
+    _muteStatusBar.hide();
+    _muteStatusBar.dispose();
+    _muteStatusBar = null;
   }
 }
 
