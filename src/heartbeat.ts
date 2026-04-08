@@ -25,6 +25,8 @@ function getEditorName(): string {
 const HEARTBEAT_INTERVAL_MS = 3 * 1000;
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let _consecutiveFailures = 0;
+let _failureWarningShown = false;
 
 function buildPayload(): HeartbeatPayload | null {
   const file = getCurrentFile();
@@ -46,13 +48,27 @@ export function startHeartbeatLoop(): void {
     return;
   }
 
+  _consecutiveFailures = 0;
+  _failureWarningShown = false;
+
   heartbeatTimer = setInterval(async () => {
     if (!isAuthenticated() || !isActive()) { return; }
 
     const payload = buildPayload();
     if (!payload) { return; }
 
-    await sendHeartbeat(payload);
+    const result = await sendHeartbeat(payload);
+    if (result) {
+      _consecutiveFailures = 0;
+    } else {
+      _consecutiveFailures++;
+      if (_consecutiveFailures >= 5 && !_failureWarningShown) {
+        _failureWarningShown = true;
+        vscode.window.showWarningMessage(
+          "XercaiiGlobe: Heartbeats are failing repeatedly. Your activity may not appear on the globe. Check your API key and network connection."
+        );
+      }
+    }
   }, HEARTBEAT_INTERVAL_MS);
 }
 
@@ -69,5 +85,10 @@ export async function sendImmediateHeartbeat(): Promise<void> {
   const payload = buildPayload();
   if (!payload) { return; }
 
-  await sendHeartbeat(payload);
+  const result = await sendHeartbeat(payload);
+  if (!result) {
+    vscode.window.showWarningMessage(
+      `XercaiiGlobe (${getEditorName()}): First heartbeat failed — your activity may not appear on the globe. Check your API key and network connection.`
+    );
+  }
 }

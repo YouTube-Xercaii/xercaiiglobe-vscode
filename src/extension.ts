@@ -203,10 +203,10 @@ async function initSocket(): Promise<void> {
   }
 }
 
-export function deactivate(): void {
-  sendOffline();
+export async function deactivate(): Promise<void> {
   stopHeartbeatLoop();
   stopTracking();
+  try { await sendOffline(); } catch { /* best-effort */ }
   detachCallListeners();
   disconnectExtSocket();
   disposeStatusBar();

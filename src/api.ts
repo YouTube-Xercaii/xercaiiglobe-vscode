@@ -57,7 +57,8 @@ export async function getMe(): Promise<UserInfo | null> {
 
 export async function sendOffline(): Promise<void> {
   try {
-    await getClient().delete("/heartbeats");
+    await getClient().delete("/heartbeats", { timeout: 3000 });
   } catch {
+    /* best-effort — editor is shutting down */
   }
 }
