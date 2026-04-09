@@ -76,7 +76,7 @@ Calls could be **started from the website** while the extension only listened fo
 
 ### Heartbeat failure visibility
 
-Heartbeats run on a short interval while you’re authenticated and “active” (see `heartbeat.ts`).
+Heartbeats run on a **3-second** interval while you’re authenticated and “active” (see `heartbeat.ts`).
 
 - **First heartbeat after connect** that fails triggers an **information/warning** so you know immediately that the API key or network may be wrong—otherwise you might code for an hour and never show up on the globe.
 - After **several consecutive failures** (with a counter and a “don’t spam” flag), you get a stronger **warning** that heartbeats are failing repeatedly and activity may not appear.
