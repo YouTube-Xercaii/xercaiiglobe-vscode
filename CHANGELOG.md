@@ -2,6 +2,17 @@
 
 All notable changes to the XercaiiGlobe VS Code extension.
 
+## [0.5.0] — 2026-04-08
+
+### Fixed
+- **Open Dashboard** opens `https://devglobe-web.onrender.com/dashboard` (correct Render web hostname).
+- **Default API URL** is `https://devglobe-api.onrender.com` in `package.json`, `config.ts`, and sign-in flow base URL.
+
+### Changed
+- HTTP `User-Agent` for API requests: `XercaiiGlobe-VSCode/0.5.0`.
+
+Releases **0.4.2** through **0.4.6** (calls, code share, heartbeats, editor detection) are summarized in `RELEASE_NOTES.md`.
+
 ## [0.4.1] — 2025-01-24
 
 ### Added

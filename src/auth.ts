@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { getConfig, updateSetting, clearApiKey } from "./config";
 import { getMe, resetClient } from "./api";
 
-const FRONTEND_URL = "https://XercaiiGlobe-web.onrender.com";
+const FRONTEND_URL = "https://devglobe-web.onrender.com";
 
 export async function signIn(): Promise<void> {
   const dashboardUrl = `${FRONTEND_URL}/dashboard`;

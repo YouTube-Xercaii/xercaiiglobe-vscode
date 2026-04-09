@@ -51,7 +51,7 @@
 | Setting | Default | Description |
 | --- | --- | --- |
 | `xercaiiglobe.apiKey` | `""` | Your XercaiiGlobe API key |
-| `xercaiiglobe.apiUrl` | `https://...` | API server URL |
+| `xercaiiglobe.apiUrl` | `https://devglobe-api.onrender.com` | API server URL (override when you move to a custom domain) |
 | `xercaiiglobe.trackingEnabled` | `true` | Enable/disable activity tracking |
 | `xercaiiglobe.showFileName` | `true` | Share the file name you're editing |
 | `xercaiiglobe.showProjectName` | `true` | Share the workspace/project name |

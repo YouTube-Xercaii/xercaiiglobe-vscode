@@ -2,7 +2,7 @@
   "name": "xercaiiglobe",
   "displayName": "XercaiiGlobe",
   "description": "Show your coding activity on a real-time 3D globe",
-  "version": "0.4.6",
+  "version": "0.5.0",
   "publisher": "YouTube-Xercaii",
   "icon": "resources/icon.png",
   "engines": {
@@ -96,7 +96,7 @@
         },
         "xercaiiglobe.apiUrl": {
           "type": "string",
-          "default": "https://XercaiiGlobe-api.onrender.com",
+          "default": "https://devglobe-api.onrender.com",
           "description": "XercaiiGlobe API server URL",
           "order": 2
         },

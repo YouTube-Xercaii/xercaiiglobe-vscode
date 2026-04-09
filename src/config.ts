@@ -7,7 +7,7 @@ export function getConfig(): XercaiiGlobeConfig {
   const cfg = vscode.workspace.getConfiguration(SECTION);
   return {
     apiKey: cfg.get<string>("apiKey", ""),
-    apiUrl: cfg.get<string>("apiUrl", "https://XercaiiGlobe-api.onrender.com"),
+    apiUrl: cfg.get<string>("apiUrl", "https://devglobe-api.onrender.com"),
     trackingEnabled: cfg.get<boolean>("trackingEnabled", true),
     showFileName: cfg.get<boolean>("showFileName", true),
     showProjectName: cfg.get<boolean>("showProjectName", true),
