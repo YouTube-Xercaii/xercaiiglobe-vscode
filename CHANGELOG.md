@@ -2,6 +2,16 @@
 
 All notable changes to the XercaiiGlobe VS Code extension.
 
+## [0.5.1] — 2026-04-08
+
+### Fixed
+- **Heartbeats after “Open Folder”** — When no file editor is active (welcome/settings/empty tab), the extension still syncs workspace name and sends heartbeats so you stay online on the globe while the window is focused.
+- **Workspace API key override** — If `.vscode/settings.json` sets `xercaiiglobe.apiKey` to an empty string, your **User** API key is used again instead of sending unauthorized requests.
+- **Duplicate trackers** — Re‑initializing tracking (sign-in, set API key, toggle tracking) disposes the previous listeners so events are not stacked.
+
+### Changed
+- HTTP `User-Agent`: `XercaiiGlobe-VSCode/0.5.1`.
+
 ## [0.5.0] — 2026-04-08
 
 ### Fixed

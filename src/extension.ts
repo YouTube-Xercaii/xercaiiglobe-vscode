@@ -176,8 +176,7 @@ function initTracking(context: vscode.ExtensionContext): void {
     return;
   }
 
-  const disposables = registerTrackerListeners();
-  disposables.forEach((d) => context.subscriptions.push(d));
+  registerTrackerListeners();
 
   startHeartbeatLoop();
 
