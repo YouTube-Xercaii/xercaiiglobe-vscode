@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getConfig, updateSetting, clearApiKey } from "./config";
+import { getConfig, setApiKeyEverywhere, clearApiKey } from "./config";
 import { getMe, resetClient } from "./api";
 
 const FRONTEND_URL = "https://devglobe-web.onrender.com";
@@ -40,7 +40,7 @@ export async function signIn(): Promise<void> {
     return;
   }
 
-  await updateSetting("apiKey", apiKey);
+  await setApiKeyEverywhere(apiKey);
   resetClient();
 
   const user = await getMe();
@@ -80,7 +80,7 @@ export async function setApiKey(): Promise<void> {
     return;
   }
 
-  await updateSetting("apiKey", apiKey);
+  await setApiKeyEverywhere(apiKey);
   resetClient();
   vscode.window.showInformationMessage("XercaiiGlobe: API key updated.");
 }

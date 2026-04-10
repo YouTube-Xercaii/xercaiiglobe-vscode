@@ -2,6 +2,15 @@
 
 All notable changes to the XercaiiGlobe VS Code extension.
 
+## [0.5.2] — 2026-04-08
+
+### Fixed
+- **Sign In / Set API Key** now writes the key to **User**, **Workspace**, and each **workspace folder** so the Workspace settings tab cannot keep an old key that overrides the one you just pasted.
+
+### Changed
+- **Sign Out** clears `apiKey` at the same scopes (removes overrides instead of only updating User).
+- HTTP `User-Agent`: `XercaiiGlobe-VSCode/0.5.2`.
+
 ## [0.5.1] — 2026-04-08
 
 ### Fixed
