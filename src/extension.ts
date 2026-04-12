@@ -10,6 +10,8 @@ import {
   sendImmediateHeartbeat,
 } from "./heartbeat";
 import { sendOffline, getMe } from "./api";
+import { refreshLiveTreePreferenceFromUser } from "./liveTreePrefs";
+import { invalidateProjectTreeCache } from "./projectTree";
 import { SidebarProvider } from "./sidebarProvider";
 import { connectExtSocket, disconnectExtSocket } from "./socket";
 import { attachCallListeners, detachCallListeners, getCallRoom, updateCodeShareStatusBar, isInCall, onCallStateChanged } from "./callHandler";
@@ -35,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("xercaiiglobe.login", async () => {
       await signIn();
-      initTracking(context);
+      void initTracking(context);
     }),
 
     vscode.commands.registerCommand("xercaiiglobe.logout", async () => {
@@ -56,7 +58,7 @@ export function activate(context: vscode.ExtensionContext): void {
       await cfg.update("trackingEnabled", newValue, vscode.ConfigurationTarget.Global);
 
       if (newValue) {
-        initTracking(context);
+        void initTracking(context);
         vscode.window.showInformationMessage("XercaiiGlobe: Tracking enabled.");
       } else {
         await sendOffline();
@@ -93,7 +95,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand("xercaiiglobe.setApiKey", async () => {
       await setApiKey();
-      initTracking(context);
+      void initTracking(context);
     }),
 
     vscode.commands.registerCommand("xercaiiglobe.toggleCodeShare", async () => {
@@ -139,6 +141,12 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      invalidateProjectTreeCache();
+    })
+  );
+
+  context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("xercaiiglobe")) {
         resetClient();
@@ -156,14 +164,14 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   if (isAuthenticated() && getConfig().trackingEnabled) {
-    initTracking(context);
+    void initTracking(context);
   } else {
     setStatus("offline");
     sidebarProvider.setStatus("offline");
   }
 }
 
-function initTracking(context: vscode.ExtensionContext): void {
+async function initTracking(context: vscode.ExtensionContext): Promise<void> {
   if (!isAuthenticated()) {
     setStatus("offline");
     sidebarProvider.setStatus("offline");
@@ -178,20 +186,20 @@ function initTracking(context: vscode.ExtensionContext): void {
 
   registerTrackerListeners();
 
+  await initSocket();
+
   startHeartbeatLoop();
 
-  sendImmediateHeartbeat();
+  await sendImmediateHeartbeat();
 
   setStatus("active");
   sidebarProvider.setStatus("active");
-
-  // Connect Socket.IO for call notifications & code sharing
-  initSocket();
 }
 
 async function initSocket(): Promise<void> {
   try {
     const me = await getMe();
+    refreshLiveTreePreferenceFromUser(me);
     if (me && me.id) {
       connectExtSocket(me.id);
       attachCallListeners();

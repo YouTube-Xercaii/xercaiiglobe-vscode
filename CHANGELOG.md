@@ -2,6 +2,15 @@
 
 All notable changes to the XercaiiGlobe VS Code extension.
 
+## [0.5.4] — 2026-04-08
+
+### Added
+- **Heartbeats: `project_tree`** — When your account has **workspace file tree** sharing enabled on the website, sends a capped, periodically refreshed listing of files and folders under the open workspace (skips `node_modules`, `.git`, etc., and omits sensitive names like `.env`). Heartbeat responses echo `show_full_project_tree_public` so the extension picks up the toggle without an extra request.
+
+### Changed
+- HTTP `User-Agent`: `XercaiiGlobe-VSCode/0.5.4`.
+- Tracking startup **awaits** socket initialization (`getMe` + connect) before the heartbeat loop and first heartbeat so the extension connects earlier when `/auth/me` succeeds.
+
 ## [0.5.3] — 2026-04-11
 
 ### Added

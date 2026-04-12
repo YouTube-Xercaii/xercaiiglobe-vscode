@@ -8,8 +8,10 @@ import {
   getCurrentProject,
   getPathFolders,
 } from "./tracker";
-import { isAuthenticated } from "./config";
+import { getConfig, isAuthenticated } from "./config";
 import { HeartbeatPayload } from "./types";
+import { wantsFullProjectTree, applyHeartbeatPrefs } from "./liveTreePrefs";
+import { getWorkspaceProjectTreeForActiveEditor } from "./projectTree";
 
 function getOSName(): string {
   const platform = os.platform();
@@ -34,7 +36,7 @@ let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let _consecutiveFailures = 0;
 let _failureWarningShown = false;
 
-function buildPayload(): HeartbeatPayload | null {
+async function buildPayload(): Promise<HeartbeatPayload | null> {
   const file = getCurrentFile();
   const language = getCurrentLanguage();
   if (!file && !language) { return null; }
@@ -51,6 +53,16 @@ function buildPayload(): HeartbeatPayload | null {
   if (pathFolders !== undefined) {
     payload.path_folders = pathFolders;
   }
+  if (wantsFullProjectTree() && getConfig().showProjectName) {
+    try {
+      const tree = await getWorkspaceProjectTreeForActiveEditor();
+      if (tree !== undefined) {
+        payload.project_tree = tree;
+      }
+    } catch {
+      /* tree scan is best-effort */
+    }
+  }
   return payload;
 }
 
@@ -65,11 +77,12 @@ export function startHeartbeatLoop(): void {
   heartbeatTimer = setInterval(async () => {
     if (!isAuthenticated() || !isActive()) { return; }
 
-    const payload = buildPayload();
+    const payload = await buildPayload();
     if (!payload) { return; }
 
     const result = await sendHeartbeat(payload);
     if (result) {
+      applyHeartbeatPrefs(result);
       _consecutiveFailures = 0;
     } else {
       _consecutiveFailures++;
@@ -93,10 +106,13 @@ export function stopHeartbeatLoop(): void {
 export async function sendImmediateHeartbeat(): Promise<void> {
   if (!isAuthenticated() || !isActive()) { return; }
 
-  const payload = buildPayload();
+  const payload = await buildPayload();
   if (!payload) { return; }
 
   const result = await sendHeartbeat(payload);
+  if (result) {
+    applyHeartbeatPrefs(result);
+  }
   if (!result) {
     vscode.window.showWarningMessage(
       `XercaiiGlobe (${getEditorName()}): First heartbeat failed — your activity may not appear on the globe. Check your API key and network connection.`
