@@ -1,7 +1,13 @@
 import * as vscode from "vscode";
 import * as os from "os";
 import { sendHeartbeat } from "./api";
-import { isActive, getCurrentFile, getCurrentLanguage, getCurrentProject } from "./tracker";
+import {
+  isActive,
+  getCurrentFile,
+  getCurrentLanguage,
+  getCurrentProject,
+  getPathFolders,
+} from "./tracker";
 import { isAuthenticated } from "./config";
 import { HeartbeatPayload } from "./types";
 
@@ -33,7 +39,7 @@ function buildPayload(): HeartbeatPayload | null {
   const language = getCurrentLanguage();
   if (!file && !language) { return null; }
 
-  return {
+  const payload: HeartbeatPayload = {
     file: file || "unknown",
     language: language || "Unknown",
     editor: getEditorName(),
@@ -41,6 +47,11 @@ function buildPayload(): HeartbeatPayload | null {
     timestamp: new Date().toISOString(),
     os_name: getOSName(),
   };
+  const pathFolders = getPathFolders();
+  if (pathFolders !== undefined) {
+    payload.path_folders = pathFolders;
+  }
+  return payload;
 }
 
 export function startHeartbeatLoop(): void {

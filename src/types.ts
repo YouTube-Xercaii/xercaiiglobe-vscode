@@ -5,6 +5,8 @@ export interface HeartbeatPayload {
   project: string;
   timestamp: string;
   os_name?: string;
+  /** Folders from workspace root to file parent (optional). */
+  path_folders?: string[];
 }
 
 export interface HeartbeatResponse {

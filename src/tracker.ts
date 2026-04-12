@@ -34,6 +34,51 @@ export function getCurrentProject(): string {
   return _currentProject;
 }
 
+const MAX_PATH_SEGMENTS = 32;
+
+/**
+ * Workspace-relative folder segments from the root down to the active file's parent.
+ * Used by heartbeats for the web "project path" modal. Undefined when not applicable.
+ */
+export function getPathFolders(): string[] | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return undefined;
+  }
+  const doc = editor.document;
+  if (doc.uri.scheme !== "file") {
+    return undefined;
+  }
+  const wf = vscode.workspace.getWorkspaceFolder(doc.uri);
+  if (!wf) {
+    return undefined;
+  }
+  const config = getConfig();
+  if (!config.showProjectName) {
+    return undefined;
+  }
+
+  let rel: string;
+  try {
+    rel = vscode.workspace.asRelativePath(doc.uri, false);
+  } catch {
+    return undefined;
+  }
+  if (!rel) {
+    return undefined;
+  }
+  const normalized = rel.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter((p) => p.length > 0);
+  if (parts.length < 2) {
+    return [];
+  }
+  parts.pop();
+  if (parts.length === 0) {
+    return [];
+  }
+  return parts.slice(0, MAX_PATH_SEGMENTS);
+}
+
 function recordActivity(): void {
   lastActivity = Date.now();
 
