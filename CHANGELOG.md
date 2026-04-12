@@ -2,6 +2,12 @@
 
 All notable changes to the XercaiiGlobe VS Code extension.
 
+## [0.5.5] — 2026-04-08
+
+### Changed
+- Version bump for release packaging (aligned with web dashboard and extensions page defaults).
+- HTTP `User-Agent`: `XercaiiGlobe-VSCode/0.5.5`.
+
 ## [0.5.4] — 2026-04-08
 
 ### Added
