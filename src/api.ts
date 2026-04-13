@@ -12,7 +12,7 @@ function getClient(): AxiosInstance {
       timeout: 10_000,
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": "XercaiiGlobe-VSCode/0.5.5",
+        "User-Agent": "XercaiiGlobe-VSCode/0.5.6",
       },
     });
   }

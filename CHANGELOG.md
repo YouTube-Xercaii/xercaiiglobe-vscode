@@ -38,11 +38,12 @@ All notable changes across **XercaiiGlobe** (API, web, and VS Code extension) si
 - **Per-project analytics** — `GET /users/me/analytics/by-project`.
 - **Editor/OS analytics** — `GET /users/me/analytics/editor-os`.
 
-### Extension (0.5.3 → 0.5.5)
+### Extension (0.5.3 → 0.5.6)
 
 - **0.5.3** — `path_folders` field in heartbeats: folder breadcrumb from workspace root to the active file's parent (up to 32 segments). Gated by `showProjectName`.
 - **0.5.4** — `project_tree` field: full workspace directory listing (max 520 nodes, depth 14), skips `node_modules`/`.git`/etc., omits `.env`/`.pem`/key files. 40-second cache per workspace folder. Server-side preference (`show_full_project_tree_public`) applied from heartbeat responses without extra requests. `initSocket` now completes before heartbeat loop starts.
 - **0.5.5** — Packaging release: version bump, `User-Agent` update, new `.vsix` built and committed for the `/extensions` page download link.
+- **0.5.6** — Same extension code as **0.5.5**; semver + `User-Agent` + fresh `.vsix` only (not a separate marketplace/GitHub **release**).
 
 ---
 
