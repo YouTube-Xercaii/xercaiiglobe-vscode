@@ -24,10 +24,87 @@ function getOSName(): string {
 }
 
 function getEditorName(): string {
-  const appName = vscode.env.appName || "";
-  if (/cursor/i.test(appName)) { return "Cursor"; }
-  if (/codium/i.test(appName)) { return "VSCodium"; }
-  return "VS Code";
+  const appName = (vscode.env.appName || "").trim();
+  const lower = appName.toLowerCase();
+  if (!appName) {
+    return "VS Code";
+  }
+  if (/cursor/i.test(appName)) {
+    return "Cursor";
+  }
+  if (/codium|vscodium/i.test(appName)) {
+    return "VSCodium";
+  }
+  if (/windsurf/i.test(appName)) {
+    return "Windsurf";
+  }
+  if (/antigravity/i.test(appName)) {
+    return "Antigravity";
+  }
+  if (/claude/i.test(appName)) {
+    return "Claude Code";
+  }
+  if (/code\s*-\s*insiders/i.test(lower) || /insiders/i.test(lower) && /code/i.test(lower)) {
+    return "VS Code Insiders";
+  }
+  if (/visual studio code|(^|\s)vscode(\s|$)/i.test(lower)) {
+    return "VS Code";
+  }
+  if (/webstorm/i.test(appName)) {
+    return "WebStorm";
+  }
+  if (/pycharm/i.test(appName)) {
+    return "PyCharm";
+  }
+  if (/intellij/i.test(appName)) {
+    return "IntelliJ IDEA";
+  }
+  if (/goland/i.test(appName)) {
+    return "Goland";
+  }
+  if (/phpstorm/i.test(appName)) {
+    return "PhpStorm";
+  }
+  if (/rider/i.test(appName)) {
+    return "Rider";
+  }
+  if (/rubymine/i.test(appName)) {
+    return "RubyMine";
+  }
+  if (/rustrover/i.test(appName)) {
+    return "RustRover";
+  }
+  if (/clion/i.test(appName)) {
+    return "CLion";
+  }
+  if (/datagrip/i.test(appName)) {
+    return "DataGrip";
+  }
+  if (/fleet/i.test(appName)) {
+    return "Fleet";
+  }
+  if (/android studio/i.test(appName)) {
+    return "Android Studio";
+  }
+  if (/xcode/i.test(appName)) {
+    return "Xcode";
+  }
+  if (/sublime/i.test(appName)) {
+    return "Sublime Text";
+  }
+  if (/atom(\s|$)/i.test(appName)) {
+    return "Atom";
+  }
+  if (/zed/i.test(appName)) {
+    return "Zed";
+  }
+  if (/eclipse/i.test(appName)) {
+    return "Eclipse";
+  }
+  if (/visual studio(?!\s+code)/i.test(appName) && !/vscode/i.test(lower)) {
+    return "Visual Studio";
+  }
+  return appName;
 }
 
 const HEARTBEAT_INTERVAL_MS = 3 * 1000;
