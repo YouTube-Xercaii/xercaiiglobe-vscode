@@ -126,7 +126,15 @@ function updateEditorInfo(editor?: vscode.TextEditor): void {
  * globe shows you online while the window is focused.
  */
 export function syncActivityFromContext(): void {
-  const editor = vscode.window.activeTextEditor;
+  // Prefer the active editor, but fall back to any visible text editor. This
+  // stops the language/file from being reset to "Unknown" when focus moves to
+  // a non-editor surface (integrated terminal, Output panel, a webview/preview,
+  // Settings tab) while your file is still open — VS Code reports
+  // `activeTextEditor` as undefined in those cases.
+  const editor =
+    vscode.window.activeTextEditor ??
+    vscode.window.visibleTextEditors.find((e) => e.document.uri.scheme === "file") ??
+    vscode.window.visibleTextEditors[0];
   if (editor) {
     updateEditorInfo(editor);
     if (vscode.window.state.focused) {

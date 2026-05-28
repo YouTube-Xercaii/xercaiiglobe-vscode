@@ -4,6 +4,14 @@ All notable changes across **XercaiiGlobe** (API, web, and VS Code extension) si
 
 ---
 
+## 2026-05-28
+
+### Extension — 0.5.8
+
+- **Fix language resetting to "Unknown"** — moving focus to the integrated terminal, an Output panel, a webview/preview, or alt-tabbing away made VS Code report no active editor, which sent a heartbeat with `language: "Unknown"` and reset the "Currently Coding" language on your profile. The tracker now falls back to a visible text editor, so your language/file stays correct until you actually close the file.
+
+---
+
 ## 2026-04-12
 
 ### Web — new pages & navigation
