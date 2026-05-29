@@ -11,7 +11,10 @@ import {
 import { getConfig, isAuthenticated } from "./config";
 import { HeartbeatPayload } from "./types";
 import { wantsFullProjectTree, applyHeartbeatPrefs } from "./liveTreePrefs";
-import { getWorkspaceProjectTreeForActiveEditor } from "./projectTree";
+import {
+  getWorkspaceProjectTreeCachedOnly,
+  scheduleWorkspaceProjectTreeRefresh,
+} from "./projectTree";
 
 function getOSName(): string {
   const platform = os.platform();
@@ -113,7 +116,7 @@ let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let _consecutiveFailures = 0;
 let _failureWarningShown = false;
 
-async function buildPayload(): Promise<HeartbeatPayload | null> {
+function buildPayload(): HeartbeatPayload | null {
   const file = getCurrentFile();
   const language = getCurrentLanguage();
   if (!file && !language) { return null; }
@@ -131,14 +134,11 @@ async function buildPayload(): Promise<HeartbeatPayload | null> {
     payload.path_folders = pathFolders;
   }
   if (wantsFullProjectTree() && getConfig().showProjectName) {
-    try {
-      const tree = await getWorkspaceProjectTreeForActiveEditor();
-      if (tree !== undefined) {
-        payload.project_tree = tree;
-      }
-    } catch {
-      /* tree scan is best-effort */
+    const tree = getWorkspaceProjectTreeCachedOnly();
+    if (tree !== undefined) {
+      payload.project_tree = tree;
     }
+    scheduleWorkspaceProjectTreeRefresh();
   }
   return payload;
 }
@@ -154,7 +154,7 @@ export function startHeartbeatLoop(): void {
   heartbeatTimer = setInterval(async () => {
     if (!isAuthenticated() || !isActive()) { return; }
 
-    const payload = await buildPayload();
+    const payload = buildPayload();
     if (!payload) { return; }
 
     const result = await sendHeartbeat(payload);
@@ -183,7 +183,7 @@ export function stopHeartbeatLoop(): void {
 export async function sendImmediateHeartbeat(): Promise<void> {
   if (!isAuthenticated() || !isActive()) { return; }
 
-  const payload = await buildPayload();
+  const payload = buildPayload();
   if (!payload) { return; }
 
   const result = await sendHeartbeat(payload);

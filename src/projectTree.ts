@@ -28,11 +28,51 @@ const MAX_DEPTH = 14;
 let cachedTree: ProjectTreeNode[] | undefined;
 let cacheUntil = 0;
 let cacheKey = "";
+let refreshInFlight: Promise<ProjectTreeNode[] | undefined> | null = null;
 
 export function invalidateProjectTreeCache(): void {
   cachedTree = undefined;
   cacheUntil = 0;
   cacheKey = "";
+  refreshInFlight = null;
+}
+
+function workspaceKeyForActiveEditor(): string | undefined {
+  const editor =
+    vscode.window.activeTextEditor ??
+    vscode.window.visibleTextEditors.find((e) => e.document.uri.scheme === "file") ??
+    vscode.window.visibleTextEditors[0];
+  if (!editor || editor.document.uri.scheme !== "file") {
+    return undefined;
+  }
+  const wf = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+  if (!wf || !getConfig().showProjectName) {
+    return undefined;
+  }
+  return wf.uri.fsPath;
+}
+
+/** Cached tree only — never blocks on disk IO (safe for immediate heartbeats). */
+export function getWorkspaceProjectTreeCachedOnly(): ProjectTreeNode[] | undefined {
+  const key = workspaceKeyForActiveEditor();
+  if (!key) {
+    return undefined;
+  }
+  const now = Date.now();
+  if (cachedTree !== undefined && cacheKey === key && now < cacheUntil) {
+    return cachedTree;
+  }
+  return undefined;
+}
+
+/** Refresh tree in the background; heartbeats attach the result on later ticks. */
+export function scheduleWorkspaceProjectTreeRefresh(): void {
+  if (refreshInFlight) {
+    return;
+  }
+  refreshInFlight = getWorkspaceProjectTreeForActiveEditor().finally(() => {
+    refreshInFlight = null;
+  });
 }
 
 function skipSensitiveFile(name: string): boolean {
@@ -104,26 +144,18 @@ async function readDirTree(
 export async function getWorkspaceProjectTreeForActiveEditor(): Promise<
   ProjectTreeNode[] | undefined
 > {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.uri.scheme !== "file") {
+  const key = workspaceKeyForActiveEditor();
+  if (!key) {
     return undefined;
   }
-  const wf = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-  if (!wf) {
-    return undefined;
-  }
-  if (!getConfig().showProjectName) {
-    return undefined;
-  }
-
-  const key = wf.uri.fsPath;
+  const wfUri = vscode.Uri.file(key);
   const now = Date.now();
   if (cachedTree !== undefined && cacheKey === key && now < cacheUntil) {
     return cachedTree;
   }
 
   const counter = { n: 0 };
-  const children = await readDirTree(wf.uri, 0, counter);
+  const children = await readDirTree(wfUri, 0, counter);
   cachedTree = children;
   cacheKey = key;
   cacheUntil = now + TREE_TTL_MS;

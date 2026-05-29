@@ -41,7 +41,10 @@ const MAX_PATH_SEGMENTS = 32;
  * Used by heartbeats for the web "project path" modal. Undefined when not applicable.
  */
 export function getPathFolders(): string[] | undefined {
-  const editor = vscode.window.activeTextEditor;
+  const editor =
+    vscode.window.activeTextEditor ??
+    vscode.window.visibleTextEditors.find((e) => e.document.uri.scheme === "file") ??
+    vscode.window.visibleTextEditors[0];
   if (!editor) {
     return undefined;
   }
