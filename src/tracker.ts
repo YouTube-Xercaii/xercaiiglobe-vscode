@@ -12,6 +12,7 @@ const NO_EDITOR_LANGUAGE = "Unknown";
 
 let lastActivity = 0;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let noEditorTimer: ReturnType<typeof setTimeout> | null = null;
 let _isActive = false;
 let _currentFile = "";
 let _currentLanguage = "";
@@ -175,12 +176,28 @@ export function registerTrackerListeners(): void {
   disposables.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor) {
+        // A real editor is focused — cancel any pending "no editor" flush so
+        // we never publish a transient "Unknown" while switching between tabs
+        // (VS Code briefly reports `undefined` between two editors).
+        if (noEditorTimer) {
+          clearTimeout(noEditorTimer);
+          noEditorTimer = null;
+        }
         recordActivity();
         updateEditorInfo(editor);
         sendImmediateHeartbeat();
       } else {
-        syncActivityFromContext();
-        sendImmediateHeartbeat();
+        // Defer the no-editor resolution briefly. If a new editor arrives
+        // within the grace window (the common tab-switch case) we cancel this
+        // and report the new language instantly instead of flashing Unknown.
+        if (noEditorTimer) {
+          clearTimeout(noEditorTimer);
+        }
+        noEditorTimer = setTimeout(() => {
+          noEditorTimer = null;
+          syncActivityFromContext();
+          sendImmediateHeartbeat();
+        }, 500);
       }
     })
   );
@@ -226,6 +243,10 @@ export function stopTracking(): void {
   if (idleTimer) {
     clearTimeout(idleTimer);
     idleTimer = null;
+  }
+  if (noEditorTimer) {
+    clearTimeout(noEditorTimer);
+    noEditorTimer = null;
   }
   _isActive = false;
   _currentFile = "";
