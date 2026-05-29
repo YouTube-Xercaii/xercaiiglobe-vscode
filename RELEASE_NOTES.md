@@ -10,7 +10,7 @@ Everything in the sections below is **new since v0.5.2** — web, API, and exten
 
 ## Release overview
 
-This is a major platform update, not just an extension patch. Since the last published extension (**0.5.2**), DevGlobe gained:
+This is a major platform update, not just an extension patch. Since the last published extension (**0.5.2**), XercaiiGlobe gained:
 
 - A full **signed-out marketing landing** with live community stats, leaderboards preview, and plugin showcase
 - A complete **Communities** product (Discord-style servers, channels, voice, bots, moderation)
